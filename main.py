@@ -11,32 +11,52 @@ from reportlab.lib.pagesizes import letter
 import pdfplumber
 from collections import OrderedDict
 from PyPDF2 import PdfReader, PdfWriter
+import os
+from pathlib import Path
 
 # Function to ensure NLTK data is downloaded
 @st.cache_resource
 def download_nltk_data():
     try:
-        # Check if punkt is already downloaded
-        try:
-            nltk.data.find('tokenizers/punkt')
-        except LookupError:
-            nltk.download('punkt')
+        # Create a custom NLTK data directory in the user's home directory
+        nltk_data_dir = str(Path.home() / 'nltk_data')
+        os.makedirs(nltk_data_dir, exist_ok=True)
         
-        # Check if stopwords is already downloaded
+        # Set NLTK data path
+        nltk.data.path.append(nltk_data_dir)
+        
+        required_packages = ['punkt', 'stopwords', 'wordnet']
+        for package in required_packages:
+            try:
+                nltk.data.find(f'tokenizers/{package}' if package == 'punkt' 
+                              else f'corpora/{package}')
+            except LookupError:
+                try:
+                    nltk.download(package, download_dir=nltk_data_dir, quiet=True)
+                except Exception as e:
+                    st.error(f"Error downloading {package}: {str(e)}")
+                    return False
+        
+        # Verify punkt tokenizer is working
+        test_text = "This is a test sentence. This is another test sentence."
         try:
-            nltk.data.find('corpora/stopwords')
-        except LookupError:
-            nltk.download('stopwords')
-            
-        # Check if wordnet is already downloaded
-        try:
-            nltk.data.find('corpora/wordnet')
-        except LookupError:
-            nltk.download('wordnet')
+            sentences = sent_tokenize(test_text)
+            if len(sentences) != 2:
+                raise Exception("Tokenizer verification failed")
+        except Exception as e:
+            st.error(f"Tokenizer verification failed: {str(e)}")
+            return False
             
         return True
     except Exception as e:
-        st.error(f"Error downloading NLTK data: {str(e)}")
+        st.error(f"""
+            Error setting up NLTK data: {str(e)}
+            
+            Troubleshooting steps:
+            1. Check write permissions for {nltk_data_dir}
+            2. Verify internet connection
+            3. If using a virtual environment, ensure NLTK is properly installed
+            """)
         return False
 
 def improve_section_extraction(text):
