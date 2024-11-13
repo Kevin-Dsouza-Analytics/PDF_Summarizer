@@ -4,3 +4,5 @@ pdfplumber
 reportlab
 PyPDF2
 openpyxl
+pandas
+scikit-learn
