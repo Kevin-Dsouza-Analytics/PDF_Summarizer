@@ -11,6 +11,12 @@ from reportlab.lib.pagesizes import letter
 import pdfplumber
 from collections import OrderedDict
 from PyPDF2 import PdfReader, PdfWriter
+import nltk
+
+# Add this line to download the 'punkt' tokenizer data
+nltk.download('punkt')
+
+# Your other imports and code
 
 # Download required NLTK data
 nltk.download('punkt')
