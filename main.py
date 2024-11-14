@@ -11,53 +11,12 @@ from reportlab.lib.pagesizes import letter
 import pdfplumber
 from collections import OrderedDict
 from PyPDF2 import PdfReader, PdfWriter
-import os
-from pathlib import Path
 
-# Function to ensure NLTK data is downloaded
-@st.cache_resource
-def download_nltk_data():
-    try:
-        # Create a custom NLTK data directory in the user's home directory
-        nltk_data_dir = str(Path.home() / 'nltk_data')
-        os.makedirs(nltk_data_dir, exist_ok=True)
-        
-        # Set NLTK data path
-        nltk.data.path.append(nltk_data_dir)
-        
-        required_packages = ['punkt', 'stopwords', 'wordnet']
-        for package in required_packages:
-            try:
-                nltk.data.find(f'tokenizers/{package}' if package == 'punkt' 
-                              else f'corpora/{package}')
-            except LookupError:
-                try:
-                    nltk.download(package, download_dir=nltk_data_dir, quiet=True)
-                except Exception as e:
-                    st.error(f"Error downloading {package}: {str(e)}")
-                    return False
-        
-        # Verify punkt tokenizer is working
-        test_text = "This is a test sentence. This is another test sentence."
-        try:
-            sentences = sent_tokenize(test_text)
-            if len(sentences) != 2:
-                raise Exception("Tokenizer verification failed")
-        except Exception as e:
-            st.error(f"Tokenizer verification failed: {str(e)}")
-            return False
-            
-        return True
-    except Exception as e:
-        st.error(f"""
-            Error setting up NLTK data: {str(e)}
-            
-            Troubleshooting steps:
-            1. Check write permissions for {nltk_data_dir}
-            2. Verify internet connection
-            3. If using a virtual environment, ensure NLTK is properly installed
-            """)
-        return False
+
+# Download required NLTK data
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 def improve_section_extraction(text):
     """Enhanced section extraction with better header detection and string handling"""
@@ -102,6 +61,7 @@ def improve_section_extraction(text):
 
         if not is_header and (current_section or current_subsection):
             current_content.append(line)
+
 
     # Add final section content if any
     if current_section:
@@ -164,6 +124,7 @@ def extract_key_points(text, max_points=5):
 
     # Return only the top `max_points` key points
     return cleaned_sentences[:max_points]
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem, Table, TableStyle
 
 def create_structured_pdf_summary(sections, metrics):
     """Creates a structured PDF summary based on a defined pattern."""
@@ -182,6 +143,7 @@ def create_structured_pdf_summary(sections, metrics):
     styles.add(ParagraphStyle(
         'BulletPoint', parent=styles['Normal'], leftIndent=20, bulletIndent=10, spaceBefore=6, spaceAfter=6
     ))
+
 
     content = [Paragraph("Document Summary", styles['MainTitle']), Spacer(1, 20)]
 
@@ -222,11 +184,6 @@ def create_structured_pdf_summary(sections, metrics):
     return buffer
 
 def main():
-    # Download required NLTK data at startup
-    if not download_nltk_data():
-        st.error("Failed to download required NLTK data. Please try again.")
-        return
-
     st.title("📄 Enhanced Document Summarizer")
 
     st.markdown("""
